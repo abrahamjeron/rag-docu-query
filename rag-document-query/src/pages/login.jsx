@@ -1,13 +1,15 @@
 import React, { useState } from "react";
-import { auth } from "../firebaseCOnfig";
+import { auth, db } from "../firebaseCOnfig";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import Cookies from 'js-cookie';
+import { initializeAnalytics } from "firebase/analytics";
 
 function Login() {
     const [error, setError] = useState("");
     const navigate = useNavigate();
-
+    
     const handleGoogleLogin = async () => {
         try {
             const provider = new GoogleAuthProvider();
@@ -24,6 +26,27 @@ function Login() {
             const credential = GoogleAuthProvider.credentialFromResult(result);
             const token = credential.accessToken;
             Cookies.set('accessToken', token, { expires: 7 });
+
+            // Store user data in Firestore
+            const userRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userRef);
+
+            if (!userDoc.exists()) {
+                // If user doesn't exist, create new document
+                await setDoc(userRef, {
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
+                    lastLogin: new Date().toISOString(),
+                    createdAt: new Date().toISOString(),
+                    accessToken: token
+                });
+            } else {
+                // If user exists, update last login
+                await setDoc(userRef, {
+                    lastLogin: new Date().toISOString()
+                }, { merge: true });
+            }
 
             navigate("/dashboard");
         } catch (error) {
