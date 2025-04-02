@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebaseCOnfig";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -9,6 +9,14 @@ import { initializeAnalytics } from "firebase/analytics";
 function Login() {
     const [error, setError] = useState("");
     const navigate = useNavigate();
+    
+    useEffect(() => {
+        // Check if user is already logged in
+        const userId = Cookies.get('userId');
+        if (userId) {
+            navigate('/dashboard');
+        }
+    }, [navigate]);
     
     const handleGoogleLogin = async () => {
         try {
